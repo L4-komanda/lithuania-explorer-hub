@@ -35,7 +35,7 @@ const Map: React.FC = () => {
         ref={mapRef}
         className={`w-full h-full bg-[#f2f5f7] relative transition-opacity duration-1000 ${mapLoaded ? 'opacity-100' : 'opacity-0'}`}
         style={{ 
-          backgroundImage: 'url("https://maps.googleapis.com/maps/api/staticmap?center=55.1694,23.8813&zoom=7&size=1200x800&scale=2&maptype=roadmap&style=feature:all|element:labels|visibility:off&style=feature:administrative|element:geometry|visibility:off&style=feature:road|element:geometry|color:0xe4e4e4&style=feature:water|element:geometry|color:0xc9e6ff&key=KEY_REMOVED")',
+          backgroundImage: 'url("https://api.mapbox.com/styles/v1/mapbox/light-v10/static/23.8813,55.1694,6,0/1200x800?access_token=pk.eyJ1IjoibG92YWJsZWFpIiwiYSI6ImNreXgyd203ODI3Y2cyb3FleGNydGt3ZzYifQ.kXFcU-Gl3TxPGwEJawmEeQ")',
           backgroundSize: 'cover',
           backgroundPosition: 'center'
         }}

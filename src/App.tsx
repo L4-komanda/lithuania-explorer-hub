@@ -8,6 +8,8 @@ import Index from "./pages/Index";
 import Races from "./pages/Races";
 import Profile from "./pages/Profile";
 import Friends from "./pages/Friends";
+import Login from "./pages/Login";
+import Complaints from "./pages/Complaints";
 import NotFound from "./pages/NotFound";
 import Navbar from "./components/Navbar";
 
@@ -25,6 +27,8 @@ const App = () => (
           <Route path="/races" element={<Races />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/friends" element={<Friends />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/complaints" element={<Complaints />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

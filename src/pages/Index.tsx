@@ -1,15 +1,25 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Map from '@/components/Map';
+import AttractionGallery from '@/components/AttractionGallery';
 import { attractions } from '@/lib/data';
-import { MapPin } from 'lucide-react';
+import { MapPin, Image } from 'lucide-react';
+import { Attraction as AttractionType } from '@/lib/types';
 
 const IndexPage: React.FC = () => {
+  const [selectedAttraction, setSelectedAttraction] = useState<AttractionType | null>(null);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+
   // Animation on component mount
   useEffect(() => {
     document.documentElement.style.scrollBehavior = 'smooth';
     window.scrollTo({ top: 0 });
   }, []);
+
+  const openGallery = (attraction: AttractionType) => {
+    setSelectedAttraction(attraction);
+    setIsGalleryOpen(true);
+  };
 
   return (
     <div className="min-h-screen pt-24 pb-20 md:pb-8 px-4 animate-fade-in">
@@ -51,6 +61,12 @@ const IndexPage: React.FC = () => {
                     <span>{attraction.rating}</span>
                     <span className="ml-1 text-yellow-500">★</span>
                   </div>
+                  <button 
+                    onClick={() => openGallery(attraction)}
+                    className="absolute bottom-3 right-3 p-2 rounded-full bg-white/70 backdrop-blur-sm hover:bg-white transition-colors"
+                  >
+                    <Image className="w-5 h-5 text-primary" />
+                  </button>
                 </div>
                 <div className="p-4">
                   <div className="flex items-start justify-between">
@@ -63,7 +79,10 @@ const IndexPage: React.FC = () => {
                     </div>
                   </div>
                   <p className="mt-3 text-sm text-muted-foreground line-clamp-2">{attraction.description}</p>
-                  <button className="mt-4 text-primary font-medium text-sm hover:underline">
+                  <button 
+                    className="mt-4 text-primary font-medium text-sm hover:underline"
+                    onClick={() => openGallery(attraction)}
+                  >
                     Plačiau →
                   </button>
                 </div>
@@ -71,6 +90,15 @@ const IndexPage: React.FC = () => {
             ))}
           </div>
         </section>
+        
+        {/* Gallery modal */}
+        {selectedAttraction && (
+          <AttractionGallery 
+            attraction={selectedAttraction} 
+            isOpen={isGalleryOpen} 
+            onClose={() => setIsGalleryOpen(false)} 
+          />
+        )}
       </div>
     </div>
   );

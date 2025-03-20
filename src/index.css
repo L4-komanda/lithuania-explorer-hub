@@ -9,34 +9,34 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    --foreground: 120 14% 15%;
     
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 120 14% 15%;
     
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 120 14% 15%;
     
-    --primary: 210 100% 50%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 135 60% 30%;
+    --primary-foreground: 0 0% 100%;
     
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 135 25% 95%;
+    --secondary-foreground: 120 14% 15%;
     
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 135 25% 95%;
+    --muted-foreground: 120 5% 40%;
     
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 135 35% 90%;
+    --accent-foreground: 120 14% 15%;
     
     --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
     
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 222 84% 5%;
+    --border: 135 10% 90%;
+    --input: 135 10% 90%;
+    --ring: 135 60% 30%;
     
-    --radius: 0.75rem;
+    --radius: 0.5rem;
   }
   
   * {
@@ -67,11 +67,11 @@
   }
   
   ::-webkit-scrollbar-thumb {
-    @apply bg-muted-foreground/20 rounded-full;
+    @apply bg-primary/20 rounded-full;
   }
   
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-muted-foreground/40;
+    @apply bg-primary/40;
   }
   
   .page-transition-enter {
@@ -99,6 +99,6 @@
 
 @layer components {
   .glass-card {
-    @apply bg-white bg-opacity-80 backdrop-blur-lg border border-white/20 shadow-sm;
+    @apply bg-white bg-opacity-80 backdrop-blur-lg border border-primary/10 shadow-sm;
   }
 }

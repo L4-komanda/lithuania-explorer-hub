@@ -77,8 +77,7 @@ const ProfilePage: React.FC = () => {
                       <div className="flex-1">
                         <h3 className="font-medium">{race.name}</h3>
                         <p className="text-sm text-muted-foreground flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {new Date(race.date).toLocaleDateString('lt-LT')}
+                          <span>{new Date(race.date).toLocaleDateString('lt-LT')}</span>
                         </p>
                       </div>
                       <button className="text-sm text-primary hover:text-primary/80">Detalės</button>

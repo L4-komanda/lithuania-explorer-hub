@@ -2,9 +2,12 @@
 import React, { useEffect, useState } from 'react';
 import { friends } from '@/lib/data';
 import { Users, UserPlus, Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import FriendSwiper from '@/components/FriendSwiper';
 
 const FriendsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [showSwiper, setShowSwiper] = useState(false);
   
   // Animation on component mount
   useEffect(() => {
@@ -47,10 +50,13 @@ const FriendsPage: React.FC = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <button className="bg-primary text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors">
-              <UserPlus className="h-5 w-5" />
-              <span>Pridėti draugą</span>
-            </button>
+            <Button 
+              className="bg-primary text-white hover:bg-primary/90"
+              onClick={() => setShowSwiper(true)}
+            >
+              <UserPlus className="h-5 w-5 mr-2" />
+              Pridėti draugą
+            </Button>
           </div>
         </section>
         
@@ -102,13 +108,44 @@ const FriendsPage: React.FC = () => {
         
         {/* Friend suggestions */}
         <section className="mb-8">
-          <h2 className="text-2xl font-bold mb-4">Siūlomi draugai</h2>
-          <div className="glass-card rounded-xl p-6 text-center">
-            <p className="text-muted-foreground">
-              Šiuo metu nėra naujų siūlomų draugų.
-            </p>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold">Rekomenduojami draugai</h2>
+            <Button 
+              variant="outline" 
+              className="text-primary border-primary hover:bg-primary/5"
+              onClick={() => setShowSwiper(true)}
+            >
+              Peržiūrėti visus
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {friends.slice(0, 3).map((friend, index) => (
+              <div 
+                key={friend.id}
+                className="glass-card rounded-xl p-4 flex items-center gap-4 transition-all hover:shadow-md animate-slide-in"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <img 
+                  src={friend.avatar} 
+                  alt={friend.name} 
+                  className="h-14 w-14 rounded-full"
+                />
+                <div>
+                  <h3 className="font-medium">{friend.name}</h3>
+                  <p className="text-sm text-muted-foreground capitalize">{friend.status}</p>
+                  <button className="mt-2 text-sm text-primary hover:underline">
+                    Pridėti draugą
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
+        
+        {/* Friend swiper */}
+        {showSwiper && (
+          <FriendSwiper friends={friends} onClose={() => setShowSwiper(false)} />
+        )}
       </div>
     </div>
   );
