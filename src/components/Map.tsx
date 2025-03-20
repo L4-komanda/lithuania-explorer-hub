@@ -30,12 +30,12 @@ const Map: React.FC = () => {
         </div>
       )}
 
-      {/* Simulated map background - Lithuania map */}
+      {/* Lithuania map background */}
       <div 
         ref={mapRef}
         className={`w-full h-full relative transition-opacity duration-1000 ${mapLoaded ? 'opacity-100' : 'opacity-0'}`}
         style={{ 
-          backgroundImage: 'url("https://api.mapbox.com/styles/v1/mapbox/light-v10/static/23.8813,55.1694,6.5,0/1200x800?access_token=pk.eyJ1IjoibG92YWJsZWFpIiwiYSI6ImNreXgyd203ODI3Y2cyb3FleGNydGt3ZzYifQ.kXFcU-Gl3TxPGwEJawmEeQ")',
+          backgroundImage: 'url("/lovable-uploads/4c2fdec9-be0f-4290-ba6c-37e8aaf7dee3.png")',
           backgroundSize: 'cover',
           backgroundPosition: 'center'
         }}

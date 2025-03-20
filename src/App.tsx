@@ -13,6 +13,7 @@ import Complaints from "./pages/Complaints";
 import Fortune from "./pages/Fortune";
 import NotFound from "./pages/NotFound";
 import Navbar from "./components/Navbar";
+import Chatbot from "./components/Chatbot";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
           <Route path="/fortune" element={<Fortune />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <Chatbot userAge={30} />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
