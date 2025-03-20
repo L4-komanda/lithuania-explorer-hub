@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { User, MapPin, Flag, Users } from 'lucide-react';
+import { User, MapPin, Flag, Users, AlertTriangle, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const Navbar: React.FC = () => {
@@ -25,6 +25,8 @@ const Navbar: React.FC = () => {
     { name: 'Žemėlapis', path: '/', icon: MapPin },
     { name: 'Lenktynės', path: '/races', icon: Flag },
     { name: 'Draugai', path: '/friends', icon: Users },
+    { name: 'Būrimas', path: '/fortune', icon: Moon },
+    { name: 'Skundai', path: '/complaints', icon: AlertTriangle },
     { name: 'Profilis', path: '/profile', icon: User },
   ];
 

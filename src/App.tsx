@@ -10,6 +10,7 @@ import Profile from "./pages/Profile";
 import Friends from "./pages/Friends";
 import Login from "./pages/Login";
 import Complaints from "./pages/Complaints";
+import Fortune from "./pages/Fortune";
 import NotFound from "./pages/NotFound";
 import Navbar from "./components/Navbar";
 
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/friends" element={<Friends />} />
           <Route path="/login" element={<Login />} />
           <Route path="/complaints" element={<Complaints />} />
+          <Route path="/fortune" element={<Fortune />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

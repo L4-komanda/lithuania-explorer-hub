@@ -26,7 +26,7 @@ const LoginPage: React.FC = () => {
         title: "Prisijungta sėkmingai",
         description: "Sveiki sugrįžę į sistemą!",
       });
-      navigate('/');
+      navigate('/'); // Redirect to map view
     }, 1000);
   };
 
