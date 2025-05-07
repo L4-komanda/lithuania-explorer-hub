@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Moon, Hand, User, Calendar } from 'lucide-react';
+import { Moon, User, Calendar, Scan } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { attractions } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
@@ -22,35 +22,70 @@ type MoonPhase = 'newMoon' | 'waxingCrescent' | 'firstQuarter' | 'waxingGibbous'
 type Horoscope = 'aries' | 'taurus' | 'gemini' | 'cancer' | 'leo' | 'virgo' | 
                 'libra' | 'scorpio' | 'sagittarius' | 'capricorn' | 'aquarius' | 'pisces';
 
-type PalmLine = 'strong' | 'medium' | 'weak';
+type ScanStage = 'ready' | 'scanning' | 'scanned' | 'completed';
 
 const FortunePage: React.FC = () => {
   const [moonPhase, setMoonPhase] = useState<MoonPhase>('fullMoon');
   const [horoscope, setHoroscope] = useState<Horoscope>('aries');
   const [birthYear, setBirthYear] = useState<string>('1990');
-  const [palmLine, setPalmLine] = useState<PalmLine>('medium');
+  const [scanStage, setScanStage] = useState<ScanStage>('ready');
   const [isOpen, setIsOpen] = useState(false);
   const [suggestedAttraction, setSuggestedAttraction] = useState<any>(null);
+  const [scanResult, setScanResult] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const handleFortuneTelling = () => {
-    // Simple algorithm to pick a "random" attraction based on the inputs
-    const moonValue = ['newMoon', 'waxingCrescent', 'firstQuarter', 'waxingGibbous', 
-                    'fullMoon', 'waningGibbous', 'lastQuarter', 'waningCrescent'].indexOf(moonPhase);
-    const horoscopeValue = ['aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 
-                          'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces'].indexOf(horoscope);
-    const yearValue = parseInt(birthYear) % 100;
-    const palmValue = ['weak', 'medium', 'strong'].indexOf(palmLine);
-    
-    // Use all values to create a seemingly complex but actually deterministic selection
-    const index = (moonValue + horoscopeValue + yearValue + palmValue) % attractions.length;
-    setSuggestedAttraction(attractions[index]);
-    setIsOpen(true);
-    
-    toast({
-      title: "Būrimas atliktas",
-      description: "Pagal jūsų duomenis, parinkta tinkamiausia vieta!",
-    });
+  const palmScanImages = [
+    'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
+    'https://images.unsplash.com/photo-1482881497185-d4a9ddbe4151',
+    'https://images.unsplash.com/photo-1582562124811-c09040d0a901',
+    'https://images.unsplash.com/photo-1500673922987-e212871fec22'
+  ];
+
+  useEffect(() => {
+    if (scanStage === 'scanning') {
+      toast({
+        title: "Vyksta skenavimas",
+        description: "Palaukite, skenuojamas jūsų delnas...",
+      });
+      
+      const timeout = setTimeout(() => {
+        const randomImageIndex = Math.floor(Math.random() * palmScanImages.length);
+        setScanResult(palmScanImages[randomImageIndex]);
+        setScanStage('scanned');
+        
+        toast({
+          title: "Skenavimas baigtas",
+          description: "Dabar galite burti savo ateitį!",
+        });
+      }, 5000); // 5 second delay
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [scanStage, toast]);
+
+  const handleScan = () => {
+    if (scanStage === 'ready') {
+      setScanStage('scanning');
+    } else if (scanStage === 'scanned') {
+      // Handle fortune telling
+      const moonValue = ['newMoon', 'waxingCrescent', 'firstQuarter', 'waxingGibbous', 
+                      'fullMoon', 'waningGibbous', 'lastQuarter', 'waningCrescent'].indexOf(moonPhase);
+      const horoscopeValue = ['aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 
+                            'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces'].indexOf(horoscope);
+      const yearValue = parseInt(birthYear) % 100;
+      
+      // Use all values to create a seemingly complex but actually deterministic selection
+      const index = (moonValue + horoscopeValue + yearValue) % attractions.length;
+      setSuggestedAttraction(attractions[index]);
+      setIsOpen(true);
+      setScanStage('ready');
+      setScanResult(null);
+      
+      toast({
+        title: "Būrimas atliktas",
+        description: "Pagal jūsų duomenis, parinkta tinkamiausia vieta!",
+      });
+    }
   };
 
   return (
@@ -60,7 +95,7 @@ const FortunePage: React.FC = () => {
           <Moon className="inline-block mr-2 text-primary" /> Būrimas
         </h1>
         <p className="text-center text-muted-foreground mb-10">
-          Pagal mėnulio fazę, delno linijas, horoskopą ir gimimo metus išbursime jums tinkamiausią lankytiną vietą!
+          Pagal mėnulio fazę, delno skanavimą, horoskopą ir gimimo metus išbursime jums tinkamiausią lankytiną vietą!
         </p>
         
         <Card>
@@ -138,23 +173,72 @@ const FortunePage: React.FC = () => {
             
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <Hand className="text-primary h-5 w-5" />
-                <Label>Delno linijos</Label>
+                <Scan className="text-primary h-5 w-5" />
+                <Label>Delno skenavimas</Label>
               </div>
-              <Select value={palmLine} onValueChange={(value) => setPalmLine(value as PalmLine)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pasirinkite delno linijų tipą" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="strong">Ryškios, gilios linijos</SelectItem>
-                  <SelectItem value="medium">Vidutinio ryškumo linijos</SelectItem>
-                  <SelectItem value="weak">Silpnai matomos linijos</SelectItem>
-                </SelectContent>
-              </Select>
+              <div 
+                className="border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center p-6 cursor-pointer hover:border-primary transition-colors relative" 
+                style={{height: "220px"}}
+              >
+                {scanStage === 'ready' && !scanResult && (
+                  <div className="text-center">
+                    <Scan className="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">Pridėkite delną prie skenavimo ploto</p>
+                  </div>
+                )}
+
+                {scanStage === 'scanning' && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-primary/5 rounded-lg">
+                    <div className="h-full w-full relative overflow-hidden">
+                      <div className="absolute top-0 left-0 h-full w-1 bg-primary animate-pulse shadow-lg" 
+                        style={{
+                          animation: "scanMove 5s linear",
+                          boxShadow: "0 0 10px 5px rgba(var(--primary), 0.3)"
+                        }}></div>
+                      <style jsx>{`
+                        @keyframes scanMove {
+                          0% { left: 0; }
+                          50% { left: 100%; }
+                          100% { left: 0; }
+                        }
+                      `}</style>
+                    </div>
+                    <p className="absolute text-primary font-medium">Skenuojama...</p>
+                  </div>
+                )}
+
+                {scanResult && scanStage === 'scanned' && (
+                  <div className="h-full w-full">
+                    <img 
+                      src={scanResult} 
+                      alt="Scan result" 
+                      className="h-full w-full object-cover rounded-lg"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
             
-            <Button className="w-full mt-4" onClick={handleFortuneTelling}>
-              <Moon className="mr-2 h-4 w-4" /> Burti
+            <Button 
+              className="w-full mt-4" 
+              onClick={handleScan}
+              disabled={scanStage === 'scanning'}
+            >
+              {scanStage === 'ready' && (
+                <>
+                  <Scan className="mr-2 h-4 w-4" /> Skenuoti
+                </>
+              )}
+              {scanStage === 'scanning' && (
+                <>
+                  <Scan className="mr-2 h-4 w-4 animate-pulse" /> Skenuojama...
+                </>
+              )}
+              {scanStage === 'scanned' && (
+                <>
+                  <Moon className="mr-2 h-4 w-4" /> Burti
+                </>
+              )}
             </Button>
           </CardContent>
         </Card>
@@ -169,7 +253,7 @@ const FortunePage: React.FC = () => {
               Jūsų išburta vieta
             </DialogTitle>
             <DialogDescription>
-              Pagal pateiktus duomenis, mėnulio fazę, horoskopą ir delno linijas
+              Pagal pateiktus duomenis, mėnulio fazę, horoskopą ir delno skaitymą
             </DialogDescription>
           </DialogHeader>
           
@@ -194,7 +278,7 @@ const FortunePage: React.FC = () => {
                     <li>• {horoscope === 'aries' ? 'Jūsų avinui tinka aktyvios vietos' : 'Jūsų horoskopas rodo potraukį tokioms vietoms'}</li>
                     <li>• {moonPhase === 'fullMoon' ? 'Pilnaties metu ši vieta ypač magiska' : 'Esama mėnulio fazė palankiausia šiai vietai'}</li>
                     <li>• Jūsų gimimo metai ({birthYear}) kuria harmoniją su šia vieta</li>
-                    <li>• {palmLine === 'strong' ? 'Ryškios delno linijos rodo stiprų ryšį su gamta' : 'Jūsų delno linijos rodo, kad šioje vietoje rasite ramybę'}</li>
+                    <li>• Jūsų delno skenavimo rezultatas atskleidė ypatingą ryšį su šia vieta</li>
                   </ul>
                 </div>
               </div>
