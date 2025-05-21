@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,7 +48,7 @@ const initialMockComplaints: Complaint[] = [
     id: '1',
     subject: 'Netinkamas turinys',
     category: 'content',
-    message: 'Radau netinkamą informaciją.',
+    message: 'Radau netinkamą informaciją puslapyje apie lankytinas vietas. Konkrečiai, aprašymas apie Vilniaus Katedrą yra pasenęs ir neatitinka tikrovės. Reikėtų atnaujinti informaciją apie darbo laiką ir galimas ekskursijas.',
     status: 'Pateiktas',
     date: '2025-04-15'
   },
@@ -57,7 +56,7 @@ const initialMockComplaints: Complaint[] = [
     id: '2',
     subject: 'Techninė problema',
     category: 'technical',
-    message: 'Neveikia žemėlapio funkcija.',
+    message: 'Neveikia žemėlapio funkcija bandant ieškoti objektų pagal adresą. Paspaudus paieškos mygtuką, niekas neįvyksta, konsolėje matau klaidą susijusią su API rakto nebuvimu.',
     status: 'Įvykdytas',
     date: '2025-04-14'
   }
@@ -75,7 +74,6 @@ const ComplaintsPage: React.FC = () => {
   const [newStatus, setNewStatus] = useState<ComplaintStatus>('Pateiktas');
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -324,12 +322,21 @@ const ComplaintsPage: React.FC = () => {
       {selectedComplaint && (
         <>
           <Dialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Keisti skundo statusą</DialogTitle>
                 <DialogDescription>
                   Pasirinkite naują statusą skundui "{selectedComplaint.subject}".
                 </DialogDescription>
+                <div className="pt-3">
+                  <Label htmlFor="complaintMessageFull" className="text-sm font-medium">Skundo pranešimas:</Label>
+                  <div 
+                    id="complaintMessageFull"
+                    className="mt-1 text-sm p-3 bg-muted rounded-md max-h-40 overflow-y-auto border"
+                  >
+                    {selectedComplaint.message}
+                  </div>
+                </div>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
@@ -381,4 +388,3 @@ const ComplaintsPage: React.FC = () => {
 };
 
 export default ComplaintsPage;
-
