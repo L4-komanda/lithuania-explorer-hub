@@ -11,6 +11,7 @@ import Friends from "./pages/Friends";
 import Login from "./pages/Login";
 import Complaints from "./pages/Complaints";
 import Fortune from "./pages/Fortune";
+import Recommendations from "./pages/Recommendations"; // Added Recommendations
 import NotFound from "./pages/NotFound";
 import Navbar from "./components/Navbar";
 import Chatbot from "./components/Chatbot";
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/complaints" element={<Complaints />} />
           <Route path="/fortune" element={<Fortune />} />
+          <Route path="/recommendations" element={<Recommendations />} /> {/* Added Recommendations route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Chatbot userAge={30} />

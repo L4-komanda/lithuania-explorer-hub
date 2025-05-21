@@ -1,300 +1,223 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { attractions } from '@/lib/data';
-import { Attraction } from '@/lib/types';
-import { Hand, ScanLine, Wand2, MapPin } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { toast } from "@/hooks/use-toast";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from '@/hooks/use-toast';
+import { Loader2, Wand2, AlertTriangle, Gift, Smile, Meh, Frown } from 'lucide-react';
 
-interface PalmLine {
-  x: number;
-  y: number;
+interface FortuneState {
+  prediction: string;
+  luckyNumber: number;
+  luckyColor: string;
+  advice: string;
 }
 
-interface PalmLinesData {
-  heartLine: PalmLine[];
-  headLine: PalmLine[];
-  lifeLine: PalmLine[];
-  fateLine: PalmLine[];
-}
+const fortuneTellingPhases = [
+  "Žvaigždės išsidėsto palankiai...",
+  "Likimo linijos ryškėja...",
+  "Ateitis atsiveria...",
+];
 
-const palmLinesData: PalmLinesData = {
-  heartLine: [
-    { x: 200, y: 300 },
-    { x: 250, y: 280 },
-    { x: 300, y: 250 },
-    { x: 350, y: 230 },
-    { x: 400, y: 220 },
-    { x: 450, y: 230 },
-    { x: 500, y: 250 },
-    { x: 550, y: 280 },
-    { x: 600, y: 300 },
-  ],
-  headLine: [
-    { x: 200, y: 400 },
-    { x: 250, y: 380 },
-    { x: 300, y: 350 },
-    { x: 350, y: 330 },
-    { x: 400, y: 320 },
-    { x: 450, y: 330 },
-    { x: 500, y: 350 },
-    { x: 550, y: 380 },
-    { x: 600, y: 400 },
-  ],
-  lifeLine: [
-    { x: 220, y: 450 },
-    { x: 230, y: 500 },
-    { x: 250, y: 550 },
-    { x: 300, y: 580 },
-    { x: 350, y: 590 },
-    { x: 400, y: 580 },
-    { x: 450, y: 550 },
-    { x: 500, y: 500 },
-    { x: 550, y: 450 },
-  ],
-  fateLine: [
-    { x: 350, y: 300 },
-    { x: 350, y: 350 },
-    { x: 350, y: 400 },
-    { x: 350, y: 450 },
-    { x: 350, y: 500 },
-  ],
+const getRandomElement = (array: string[]) => {
+  return array[Math.floor(Math.random() * array.length)];
 };
 
-interface PalmLineSelectorProps {
-  palmLinesData: PalmLinesData;
-  onLineSelected: (lineName: keyof PalmLinesData, point: PalmLine) => void;
-}
-
-const PalmLineSelector: React.FC<PalmLineSelectorProps> = ({ palmLinesData, onLineSelected }) => {
-  const handleLineClick = (lineName: keyof PalmLinesData, point: PalmLine) => {
-    onLineSelected(lineName, point);
-  };
-
-  return (
-    <svg width="800" height="600">
-      {Object.entries(palmLinesData).map(([lineName, line]) => (
-        <g key={lineName}>
-          <polyline
-            points={line.map(p => `${p.x},${p.y}`).join(' ')}
-            style={{
-              fill: 'none',
-              stroke: 'rgba(255, 255, 255, 0.7)',
-              strokeWidth: 2,
-            }}
-          />
-          {line.map((point, index) => (
-            <circle
-              key={index}
-              cx={point.x}
-              cy={point.y}
-              r={5}
-              fill="rgba(255, 255, 0, 0.5)"
-              style={{ cursor: 'pointer' }}
-              onClick={() => handleLineClick(lineName as keyof PalmLinesData, point)}
-            />
-          ))}
-        </g>
-      ))}
-    </svg>
-  );
+const initialFortuneState: FortuneState = {
+  prediction: "",
+  luckyNumber: 0,
+  luckyColor: "",
+  advice: "",
 };
 
 const FortunePage: React.FC = () => {
+  const [name, setName] = useState('');
+  const [birthDate, setBirthDate] = useState('');
+  const [phase, setPhase] = useState<'input' | 'loading' | 'result'>('input');
+  const [fortune, setFortune] = useState<FortuneState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<Attraction | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [scanStep, setScanStep] = useState(0);
-  const [selectedLine, setSelectedLine] = useState<{ lineName: keyof PalmLinesData; point: PalmLine } | null>(null);
-  const [isScanning, setIsScanning] = useState(false);
-  const scanTimeout = useRef<NodeJS.Timeout | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const fortuneCardRef = useRef<HTMLDivElement>(null);
 
-  const palmImages = [
-    '/lovable-uploads/4c2fdec9-be0f-4290-ba6c-37e8aaf7dee3.png', // Assuming this is one of the images
-    'https://images.unsplash.com/photo-1517849845537-4d257902454a?q=80&w=800&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1507146426996-ef05306b995a?q=80&w=800&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1510771463146-e89e6e86560e?q=80&w=800&auto=format&fit=crop'
-  ];
-  const [currentPalmImage, setCurrentPalmImage] = useState<string | null>(null);
-
-  const handleScan = () => {
-    setIsLoading(true);
-    setIsScanning(true);
-    setScanStep(0);
-    setCurrentPalmImage(palmImages[Math.floor(Math.random() * palmImages.length)]);
-
-    scanTimeout.current = setTimeout(() => {
-      setScanStep(1);
-      scanTimeout.current = setTimeout(() => {
-        setScanStep(2);
-        scanTimeout.current = setTimeout(() => {
-          setScanStep(3);
-          scanTimeout.current = setTimeout(() => {
-            setScanStep(4);
-            scanTimeout.current = setTimeout(() => {
-              setIsLoading(false);
-              setIsScanning(false);
-              const randomAttraction = attractions[Math.floor(Math.random() * attractions.length)];
-              setResult(randomAttraction);
-              setIsModalOpen(true);
-            }, 1500);
-          }, 1500);
-        }, 1500);
-      }, 1500);
-    }, 1500);
-  };
-
-  const handleFortuneTell = () => {
-    setIsLoading(true);
-    setIsScanning(true);
-    setScanStep(0);
-
-    scanTimeout.current = setTimeout(() => {
-      setScanStep(1);
-      scanTimeout.current = setTimeout(() => {
-        setScanStep(2);
-        scanTimeout.current = setTimeout(() => {
-          setScanStep(3);
-          scanTimeout.current = setTimeout(() => {
-            setScanStep(4);
-            scanTimeout.current = setTimeout(() => {
-              setIsLoading(false);
-              setIsScanning(false);
-              const randomAttraction = attractions[Math.floor(Math.random() * attractions.length)];
-              setResult(randomAttraction);
-              setIsModalOpen(true);
-            }, 1500);
-          }, 1500);
-        }, 1500);
-      }, 1500);
-    }, 1500);
-  };
-
-  const resetScanner = () => {
-    setResult(null);
-    setIsModalOpen(false);
-    setCurrentPalmImage(null);
-    setIsScanning(false);
-    setScanStep(0);
-    if (scanTimeout.current) {
-      clearTimeout(scanTimeout.current);
+  const handleFortuneTell = async () => {
+    if (!name || !birthDate) {
+      setError('Prašome įvesti vardą ir gimimo datą.');
+      return;
     }
+
+    setError(null);
+    setIsLoading(true);
+    setPhase('loading');
+
+    // Simulate fortune telling process
+    const fortuneTellingInterval = setInterval(() => {
+      toast({
+        title: "Burtai...",
+        description: getRandomElement(fortuneTellingPhases),
+      });
+    }, 1500);
+
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+
+    clearInterval(fortuneTellingInterval);
+    setIsLoading(false);
+    setPhase('result');
+
+    // Mock fortune result
+    const mockedFortune: FortuneState = {
+      prediction: `Šiandien jūsų laukia netikėtumai, tačiau nebijokite priimti iššūkius. Būkite atviri naujoms galimybėms ir pasitikėkite savo intuicija.`,
+      luckyNumber: Math.floor(Math.random() * 100),
+      luckyColor: ['raudona', 'žalia', 'mėlyna', 'geltona', 'violetinė', 'oranžinė', 'juoda', 'balta'][Math.floor(Math.random() * 8)],
+      advice: `Nepamirškite skirti laiko sau ir savo artimiesiems.`,
+    };
+
+    setFortune(mockedFortune);
   };
 
-  const scanSteps = [
-    "Analizuojama delno struktūra...",
-    "Ieškoma pagrindinių linijų...",
-    "Vertinamas pirštų ilgis ir forma...",
-    "Tikrinami kalneliai ir ženklai...",
-    "Formuojama asmeninė prognozė..."
-  ];
+  const handleReset = () => {
+    setPhase('input');
+    setFortune(null);
+    setName('');
+    setBirthDate('');
+  };
 
   useEffect(() => {
-    if (isLoading && scanStep < scanSteps.length) {
-      document.title = `Skenuojama... ${scanSteps[scanStep]}`;
-    } else {
-      document.title = "Delno Linijų Būrimas";
+    document.documentElement.style.scrollBehavior = 'smooth';
+    window.scrollTo({ top: 0 });
+
+    // Fade in animation
+    if (fortuneCardRef.current) {
+      fortuneCardRef.current.classList.add('animate-fade-in-scale');
     }
-  }, [isLoading, scanStep]);
 
+    return () => {
+      document.documentElement.style.scrollBehavior = 'auto';
+      if (fortuneCardRef.current) {
+        fortuneCardRef.current.classList.remove('animate-fade-in-scale');
+      }
+    };
+  }, []);
 
-  const PalmScanner: React.FC<{ onScanComplete: (image: string) => void, isScanning: boolean }> = ({ onScanComplete, isScanning }) => {
-    return (
-      <div className="w-full max-w-xs h-80 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center relative overflow-hidden border-2 border-primary/50">
-        {isScanning && scanStep < scanSteps.length && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 z-10">
-            <ScanLine className="w-16 h-16 text-primary animate-pulse" />
-            <p className="text-white mt-2 text-center px-4">{scanSteps[scanStep]}</p>
-            <div className="w-3/4 h-2 bg-primary/30 rounded-full mt-4 overflow-hidden">
-              <div
-                className="h-full bg-primary transition-all duration-1000 ease-linear"
-                style={{ width: `${((scanStep + 1) / scanSteps.length) * 100}%` }}
-              ></div>
-            </div>
-          </div>
-        )}
-        {!isScanning && !currentPalmImage && (
-          <div className="text-center text-muted-foreground">
-            <Hand className="w-24 h-24 mx-auto mb-4" />
-            <p>Padėkite delną skenavimui</p>
-          </div>
-        )}
-        {currentPalmImage && (
-          <img src={currentPalmImage} alt="Nuskenuotas delnas" className="w-full h-full object-cover" />
-        )}
-      </div>
-    );
+  const getSentimentIcon = () => {
+    const randomNumber = Math.random();
+    if (randomNumber < 0.3) {
+      return <Smile className="h-10 w-10 text-green-400" />;
+    } else if (randomNumber < 0.6) {
+      return <Meh className="h-10 w-10 text-yellow-400" />;
+    } else {
+      return <Frown className="h-10 w-10 text-red-400" />;
+    }
   };
 
   return (
-    <div className="container mx-auto py-24 px-4 min-h-screen flex flex-col items-center justify-center animate-fade-in">
-      
-      
-      <Card className="w-full max-w-lg glass-card animate-scale-in">
-        <CardHeader className="text-center">
-          <Wand2 className="w-12 h-12 mx-auto text-primary mb-2" />
-          <CardTitle className="text-2xl">Delno Linijų Būrimas</CardTitle>
-          <CardDescription>Nuskenuokite savo delną ir sužinokite, ką jis slepia!</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center space-y-6">
-          <PalmScanner onScanComplete={setCurrentPalmImage} isScanning={isLoading} />
-
-          {!isLoading && !result && (
-            <Button onClick={handleScan} className="w-full" size="lg" disabled={isLoading}>
-              <ScanLine className="mr-2" /> {currentPalmImage ? "Skenuoti iš naujo" : "Skenuoti Delną"}
-            </Button>
-          )}
-
-          {isLoading && (
-            <div className="text-center">
-              <p>Skenuojama... Prašome palaukti.</p>
-            </div>
-          )}
-
-          {currentPalmImage && !isLoading && !result && (
-             <Button onClick={handleFortuneTell} className="w-full bg-green-500 hover:bg-green-600 text-white" size="lg">
-              <Wand2 className="mr-2" /> Burti
-            </Button>
-          )}
-        </CardContent>
-        {result && (
-          <CardFooter className="flex flex-col items-center pt-6">
-            <p className="text-lg font-semibold mb-2">Jūsų laukia kelionė į:</p>
-            <h3 className="text-2xl font-bold text-primary text-center">{result.name}</h3>
-            <img src={result.image} alt={result.name} className="mt-4 rounded-lg max-h-48 object-cover aspect-video"/>
-            <Button onClick={resetScanner} className="mt-6 w-full" variant="outline">
-              Bandyti dar kartą
-            </Button>
-          </CardFooter>
+    <div className="min-h-screen flex flex-col items-center justify-center pt-24 pb-20 md:pb-8 px-4 bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 text-white selection:bg-white/30 selection:text-white">
+      <div ref={fortuneCardRef} className="w-full max-w-md">
+        {/* Phase 1: Input */}
+        {phase === 'input' && (
+          <Card className="bg-white/10 backdrop-blur-lg shadow-xl border-white/20 animate-fade-in-scale">
+            <CardHeader>
+              <CardTitle className="text-3xl font-bold text-center flex items-center justify-center">
+                <Wand2 className="mr-3 h-8 w-8 text-yellow-300" />
+                Ateities Spėjimas
+              </CardTitle>
+              <CardDescription className="text-center text-white/80 pt-2">
+                Įveskite savo duomenis ir sužinokite, ką jums lemia žvaigždės!
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-white/90">Vardas</Label>
+                <Input 
+                  id="name" 
+                  placeholder="Jūsų vardas" 
+                  value={name} 
+                  onChange={(e) => setName(e.target.value)}
+                  className="bg-white/20 border-white/30 placeholder:text-white/60 focus:bg-white/30"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="birthDate" className="text-white/90">Gimimo data</Label>
+                <Input 
+                  id="birthDate" 
+                  type="date" 
+                  value={birthDate} 
+                  onChange={(e) => setBirthDate(e.target.value)} 
+                  className="bg-white/20 border-white/30 placeholder:text-white/60 focus:bg-white/30 appearance-none"
+                  style={{ colorScheme: 'dark' }} 
+                />
+              </div>
+              {error && (
+                <p className="text-sm text-red-300 bg-red-900/50 p-3 rounded-md flex items-center">
+                  <AlertTriangle className="w-4 h-4 mr-2" />
+                  {error}
+                </p>
+              )}
+            </CardContent>
+            <CardFooter className="flex justify-center pt-6">
+              <Button 
+                onClick={handleFortuneTell} 
+                disabled={isLoading || !name || !birthDate}
+                className="w-full bg-yellow-400 hover:bg-yellow-500 text-purple-700 font-semibold text-lg py-3 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg"
+              >
+                {isLoading ? (
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                ) : (
+                  <Wand2 className="mr-2 h-5 w-5" />
+                )}
+                Spėti ateitį
+              </Button>
+            </CardFooter>
+          </Card>
         )}
-      </Card>
 
-      
-      {result && isModalOpen && (
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-2xl">Jūsų kelionės tikslas!</DialogTitle>
-              <DialogDescription>
-                Remiantis jūsų delno linijomis, žvaigždės jums lėmė aplankyti šią vietą:
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-4 text-center">
-              <img src={result.image} alt={result.name} className="rounded-md mx-auto mb-4 max-h-60 object-contain" />
-              <h3 className="text-xl font-semibold text-primary">{result.name}</h3>
-              <p className="text-sm text-muted-foreground mt-1 flex items-center justify-center">
-                <MapPin className="w-4 h-4 mr-1" /> {result.category}
-              </p>
-              <p className="text-sm text-muted-foreground mt-2 line-clamp-3">{result.description}</p>
-            </div>
-            <DialogFooter>
-              <Button onClick={() => setIsModalOpen(false)} className="w-full">Uždaryti</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
-      
+        {/* Phase 2: Loading */}
+        {phase === 'loading' && (
+          <Card className="bg-white/10 backdrop-blur-lg shadow-xl border-white/20 animate-fade-in-scale text-center py-20">
+            <CardContent>
+              <Loader2 className="h-16 w-16 text-yellow-300 animate-spin mx-auto mb-6" />
+              <p className="text-xl font-semibold text-white/90">Maišomos žvaigždžių kortos...</p>
+              <p className="text-white/70">Jūsų likimas tuoj paaiškės.</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Phase 3: Result */}
+        {phase === 'result' && fortune && (
+          <Card className="bg-white/10 backdrop-blur-lg shadow-xl border-white/20 animate-fade-in-scale">
+            <CardHeader className="text-center">
+              <div className="mx-auto bg-yellow-400 rounded-full p-3 inline-block mb-4 shadow-md">
+                {getSentimentIcon()}
+              </div>
+              <CardTitle className="text-3xl font-bold text-white">
+                {name}, jūsų ateitis atskleista!
+              </CardTitle>
+              <CardDescription className="text-white/80 pt-2">
+                Remiantis gimimo data {new Date(birthDate).toLocaleDateString('lt-LT')}, žvaigždės byloja:
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 text-center">
+              <div className="border-t border-b border-white/20 py-4">
+                <p className="text-lg text-white/90 leading-relaxed">{fortune.prediction}</p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm text-yellow-300 font-semibold">Laimingas skaičius: <span className="text-xl text-white">{fortune.luckyNumber}</span></p>
+                <p className="text-sm text-yellow-300 font-semibold">Laiminga spalva: <span className="text-xl text-white capitalize" style={{color: fortune.luckyColor.toLowerCase() === 'balta' ? '#FFFFFF' : fortune.luckyColor.toLowerCase() === 'juoda' ? '#CCCCCC' : fortune.luckyColor.toLowerCase() }}>{fortune.luckyColor}</span></p>
+                <p className="text-sm text-yellow-300 font-semibold">Patarimas: <span className="text-white italic">"{fortune.advice}"</span></p>
+              </div>
+            </CardContent>
+            <CardFooter className="flex justify-center pt-6">
+              <Button 
+                onClick={handleReset}
+                className="w-full bg-purple-500 hover:bg-purple-600 text-white font-semibold text-lg py-3 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg"
+              >
+                <Gift className="mr-2 h-5 w-5" />
+                Bandyti dar kartą
+              </Button>
+            </CardFooter>
+          </Card>
+        )}
+      </div>
     </div>
   );
 };
