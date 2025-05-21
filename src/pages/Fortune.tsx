@@ -1,295 +1,300 @@
-
-import React, { useState, useEffect } from 'react';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle,
-  DialogFooter
-} from "@/components/ui/dialog";
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Moon, User, Calendar, Scan } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { attractions } from '@/lib/data';
-import { useToast } from '@/hooks/use-toast';
+import { Attraction } from '@/lib/types';
+import { Hand, ScanLine, Wand2, MapPin } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { toast } from "@/hooks/use-toast";
 
-type MoonPhase = 'newMoon' | 'waxingCrescent' | 'firstQuarter' | 'waxingGibbous' | 
-                'fullMoon' | 'waningGibbous' | 'lastQuarter' | 'waningCrescent';
+interface PalmLine {
+  x: number;
+  y: number;
+}
 
-type Horoscope = 'aries' | 'taurus' | 'gemini' | 'cancer' | 'leo' | 'virgo' | 
-                'libra' | 'scorpio' | 'sagittarius' | 'capricorn' | 'aquarius' | 'pisces';
+interface PalmLinesData {
+  heartLine: PalmLine[];
+  headLine: PalmLine[];
+  lifeLine: PalmLine[];
+  fateLine: PalmLine[];
+}
 
-type ScanStage = 'ready' | 'scanning' | 'scanned' | 'completed';
+const palmLinesData: PalmLinesData = {
+  heartLine: [
+    { x: 200, y: 300 },
+    { x: 250, y: 280 },
+    { x: 300, y: 250 },
+    { x: 350, y: 230 },
+    { x: 400, y: 220 },
+    { x: 450, y: 230 },
+    { x: 500, y: 250 },
+    { x: 550, y: 280 },
+    { x: 600, y: 300 },
+  ],
+  headLine: [
+    { x: 200, y: 400 },
+    { x: 250, y: 380 },
+    { x: 300, y: 350 },
+    { x: 350, y: 330 },
+    { x: 400, y: 320 },
+    { x: 450, y: 330 },
+    { x: 500, y: 350 },
+    { x: 550, y: 380 },
+    { x: 600, y: 400 },
+  ],
+  lifeLine: [
+    { x: 220, y: 450 },
+    { x: 230, y: 500 },
+    { x: 250, y: 550 },
+    { x: 300, y: 580 },
+    { x: 350, y: 590 },
+    { x: 400, y: 580 },
+    { x: 450, y: 550 },
+    { x: 500, y: 500 },
+    { x: 550, y: 450 },
+  ],
+  fateLine: [
+    { x: 350, y: 300 },
+    { x: 350, y: 350 },
+    { x: 350, y: 400 },
+    { x: 350, y: 450 },
+    { x: 350, y: 500 },
+  ],
+};
 
-const FortunePage: React.FC = () => {
-  const [moonPhase, setMoonPhase] = useState<MoonPhase>('fullMoon');
-  const [horoscope, setHoroscope] = useState<Horoscope>('aries');
-  const [birthYear, setBirthYear] = useState<string>('1990');
-  const [scanStage, setScanStage] = useState<ScanStage>('ready');
-  const [isOpen, setIsOpen] = useState(false);
-  const [suggestedAttraction, setSuggestedAttraction] = useState<any>(null);
-  const [scanResult, setScanResult] = useState<string | null>(null);
-  const { toast } = useToast();
+interface PalmLineSelectorProps {
+  palmLinesData: PalmLinesData;
+  onLineSelected: (lineName: keyof PalmLinesData, point: PalmLine) => void;
+}
 
-  const palmScanImages = [
-    'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
-    'https://images.unsplash.com/photo-1482881497185-d4a9ddbe4151',
-    'https://images.unsplash.com/photo-1582562124811-c09040d0a901',
-    'https://images.unsplash.com/photo-1500673922987-e212871fec22'
-  ];
-
-  useEffect(() => {
-    if (scanStage === 'scanning') {
-      toast({
-        title: "Vyksta skenavimas",
-        description: "Palaukite, skenuojamas jūsų delnas...",
-      });
-      
-      const timeout = setTimeout(() => {
-        const randomImageIndex = Math.floor(Math.random() * palmScanImages.length);
-        setScanResult(palmScanImages[randomImageIndex]);
-        setScanStage('scanned');
-        
-        toast({
-          title: "Skenavimas baigtas",
-          description: "Dabar galite burti savo ateitį!",
-        });
-      }, 5000); // 5 second delay
-      
-      return () => clearTimeout(timeout);
-    }
-  }, [scanStage, toast]);
-
-  const handleScan = () => {
-    if (scanStage === 'ready') {
-      setScanStage('scanning');
-    } else if (scanStage === 'scanned') {
-      // Handle fortune telling
-      const moonValue = ['newMoon', 'waxingCrescent', 'firstQuarter', 'waxingGibbous', 
-                      'fullMoon', 'waningGibbous', 'lastQuarter', 'waningCrescent'].indexOf(moonPhase);
-      const horoscopeValue = ['aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 
-                            'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces'].indexOf(horoscope);
-      const yearValue = parseInt(birthYear) % 100;
-      
-      // Use all values to create a seemingly complex but actually deterministic selection
-      const index = (moonValue + horoscopeValue + yearValue) % attractions.length;
-      setSuggestedAttraction(attractions[index]);
-      setIsOpen(true);
-      setScanStage('ready');
-      setScanResult(null);
-      
-      toast({
-        title: "Būrimas atliktas",
-        description: "Pagal jūsų duomenis, parinkta tinkamiausia vieta!",
-      });
-    }
+const PalmLineSelector: React.FC<PalmLineSelectorProps> = ({ palmLinesData, onLineSelected }) => {
+  const handleLineClick = (lineName: keyof PalmLinesData, point: PalmLine) => {
+    onLineSelected(lineName, point);
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-20 md:pb-8 px-4 animate-fade-in">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl md:text-4xl font-bold mb-6 tracking-tight text-center">
-          <Moon className="inline-block mr-2 text-primary" /> Būrimas
-        </h1>
-        <p className="text-center text-muted-foreground mb-10">
-          Pagal mėnulio fazę, delno skanavimą, horoskopą ir gimimo metus išbursime jums tinkamiausią lankytiną vietą!
-        </p>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Įveskite savo duomenis būrimui</CardTitle>
-            <CardDescription>
-              Pateikite informaciją, pagal kurią išbursime jums tinkamiausią lankytiną vietą
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Moon className="text-primary h-5 w-5" />
-                <Label>Mėnulio fazė</Label>
-              </div>
-              <Select value={moonPhase} onValueChange={(value) => setMoonPhase(value as MoonPhase)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pasirinkite mėnulio fazę" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newMoon">Jaunatis</SelectItem>
-                  <SelectItem value="waxingCrescent">Priešpilnis (didėjantis)</SelectItem>
-                  <SelectItem value="firstQuarter">Pirmas ketvirtis</SelectItem>
-                  <SelectItem value="waxingGibbous">Beveik pilnatis</SelectItem>
-                  <SelectItem value="fullMoon">Pilnatis</SelectItem>
-                  <SelectItem value="waningGibbous">Po pilnaties</SelectItem>
-                  <SelectItem value="lastQuarter">Paskutinis ketvirtis</SelectItem>
-                  <SelectItem value="waningCrescent">Delčia</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <User className="text-primary h-5 w-5" />
-                <Label>Horoskopo ženklas</Label>
-              </div>
-              <Select value={horoscope} onValueChange={(value) => setHoroscope(value as Horoscope)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pasirinkite horoskopo ženklą" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="aries">Avinas</SelectItem>
-                  <SelectItem value="taurus">Jautis</SelectItem>
-                  <SelectItem value="gemini">Dvyniai</SelectItem>
-                  <SelectItem value="cancer">Vėžys</SelectItem>
-                  <SelectItem value="leo">Liūtas</SelectItem>
-                  <SelectItem value="virgo">Mergelė</SelectItem>
-                  <SelectItem value="libra">Svarstyklės</SelectItem>
-                  <SelectItem value="scorpio">Skorpionas</SelectItem>
-                  <SelectItem value="sagittarius">Šaulys</SelectItem>
-                  <SelectItem value="capricorn">Ožiaragis</SelectItem>
-                  <SelectItem value="aquarius">Vandenis</SelectItem>
-                  <SelectItem value="pisces">Žuvys</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Calendar className="text-primary h-5 w-5" />
-                <Label>Gimimo metai</Label>
-              </div>
-              <Select value={birthYear} onValueChange={setBirthYear}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pasirinkite gimimo metus" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 80 }, (_, i) => 2005 - i).map(year => (
-                    <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Scan className="text-primary h-5 w-5" />
-                <Label>Delno skenavimas</Label>
-              </div>
-              <div 
-                className="border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center p-6 cursor-pointer hover:border-primary transition-colors relative" 
-                style={{height: "220px"}}
-              >
-                {scanStage === 'ready' && !scanResult && (
-                  <div className="text-center">
-                    <Scan className="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">Pridėkite delną prie skenavimo ploto</p>
-                  </div>
-                )}
+    <svg width="800" height="600">
+      {Object.entries(palmLinesData).map(([lineName, line]) => (
+        <g key={lineName}>
+          <polyline
+            points={line.map(p => `${p.x},${p.y}`).join(' ')}
+            style={{
+              fill: 'none',
+              stroke: 'rgba(255, 255, 255, 0.7)',
+              strokeWidth: 2,
+            }}
+          />
+          {line.map((point, index) => (
+            <circle
+              key={index}
+              cx={point.x}
+              cy={point.y}
+              r={5}
+              fill="rgba(255, 255, 0, 0.5)"
+              style={{ cursor: 'pointer' }}
+              onClick={() => handleLineClick(lineName as keyof PalmLinesData, point)}
+            />
+          ))}
+        </g>
+      ))}
+    </svg>
+  );
+};
 
-                {scanStage === 'scanning' && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-primary/5 rounded-lg">
-                    <div className="h-full w-full relative overflow-hidden">
-                      <div className="absolute top-0 left-0 h-full w-1 bg-primary animate-pulse shadow-lg" 
-                        style={{
-                          animation: "scanMove 5s linear",
-                          boxShadow: "0 0 10px 5px rgba(var(--primary), 0.3)"
-                        }}></div>
-                      <style jsx>{`
-                        @keyframes scanMove {
-                          0% { left: 0; }
-                          50% { left: 100%; }
-                          100% { left: 0; }
-                        }
-                      `}</style>
-                    </div>
-                    <p className="absolute text-primary font-medium">Skenuojama...</p>
-                  </div>
-                )}
+const FortunePage: React.FC = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [result, setResult] = useState<Attraction | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [scanStep, setScanStep] = useState(0);
+  const [selectedLine, setSelectedLine] = useState<{ lineName: keyof PalmLinesData; point: PalmLine } | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const scanTimeout = useRef<NodeJS.Timeout | null>(null);
 
-                {scanResult && scanStage === 'scanned' && (
-                  <div className="h-full w-full">
-                    <img 
-                      src={scanResult} 
-                      alt="Scan result" 
-                      className="h-full w-full object-cover rounded-lg"
-                    />
-                  </div>
-                )}
-              </div>
+  const palmImages = [
+    '/lovable-uploads/4c2fdec9-be0f-4290-ba6c-37e8aaf7dee3.png', // Assuming this is one of the images
+    'https://images.unsplash.com/photo-1517849845537-4d257902454a?q=80&w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1507146426996-ef05306b995a?q=80&w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1510771463146-e89e6e86560e?q=80&w=800&auto=format&fit=crop'
+  ];
+  const [currentPalmImage, setCurrentPalmImage] = useState<string | null>(null);
+
+  const handleScan = () => {
+    setIsLoading(true);
+    setIsScanning(true);
+    setScanStep(0);
+    setCurrentPalmImage(palmImages[Math.floor(Math.random() * palmImages.length)]);
+
+    scanTimeout.current = setTimeout(() => {
+      setScanStep(1);
+      scanTimeout.current = setTimeout(() => {
+        setScanStep(2);
+        scanTimeout.current = setTimeout(() => {
+          setScanStep(3);
+          scanTimeout.current = setTimeout(() => {
+            setScanStep(4);
+            scanTimeout.current = setTimeout(() => {
+              setIsLoading(false);
+              setIsScanning(false);
+              const randomAttraction = attractions[Math.floor(Math.random() * attractions.length)];
+              setResult(randomAttraction);
+              setIsModalOpen(true);
+            }, 1500);
+          }, 1500);
+        }, 1500);
+      }, 1500);
+    }, 1500);
+  };
+
+  const handleFortuneTell = () => {
+    setIsLoading(true);
+    setIsScanning(true);
+    setScanStep(0);
+
+    scanTimeout.current = setTimeout(() => {
+      setScanStep(1);
+      scanTimeout.current = setTimeout(() => {
+        setScanStep(2);
+        scanTimeout.current = setTimeout(() => {
+          setScanStep(3);
+          scanTimeout.current = setTimeout(() => {
+            setScanStep(4);
+            scanTimeout.current = setTimeout(() => {
+              setIsLoading(false);
+              setIsScanning(false);
+              const randomAttraction = attractions[Math.floor(Math.random() * attractions.length)];
+              setResult(randomAttraction);
+              setIsModalOpen(true);
+            }, 1500);
+          }, 1500);
+        }, 1500);
+      }, 1500);
+    }, 1500);
+  };
+
+  const resetScanner = () => {
+    setResult(null);
+    setIsModalOpen(false);
+    setCurrentPalmImage(null);
+    setIsScanning(false);
+    setScanStep(0);
+    if (scanTimeout.current) {
+      clearTimeout(scanTimeout.current);
+    }
+  };
+
+  const scanSteps = [
+    "Analizuojama delno struktūra...",
+    "Ieškoma pagrindinių linijų...",
+    "Vertinamas pirštų ilgis ir forma...",
+    "Tikrinami kalneliai ir ženklai...",
+    "Formuojama asmeninė prognozė..."
+  ];
+
+  useEffect(() => {
+    if (isLoading && scanStep < scanSteps.length) {
+      document.title = `Skenuojama... ${scanSteps[scanStep]}`;
+    } else {
+      document.title = "Delno Linijų Būrimas";
+    }
+  }, [isLoading, scanStep]);
+
+
+  const PalmScanner: React.FC<{ onScanComplete: (image: string) => void, isScanning: boolean }> = ({ onScanComplete, isScanning }) => {
+    return (
+      <div className="w-full max-w-xs h-80 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center relative overflow-hidden border-2 border-primary/50">
+        {isScanning && scanStep < scanSteps.length && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 z-10">
+            <ScanLine className="w-16 h-16 text-primary animate-pulse" />
+            <p className="text-white mt-2 text-center px-4">{scanSteps[scanStep]}</p>
+            <div className="w-3/4 h-2 bg-primary/30 rounded-full mt-4 overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all duration-1000 ease-linear"
+                style={{ width: `${((scanStep + 1) / scanSteps.length) * 100}%` }}
+              ></div>
             </div>
-            
-            <Button 
-              className="w-full mt-4" 
-              onClick={handleScan}
-              disabled={scanStage === 'scanning'}
-            >
-              {scanStage === 'ready' && (
-                <>
-                  <Scan className="mr-2 h-4 w-4" /> Skenuoti
-                </>
-              )}
-              {scanStage === 'scanning' && (
-                <>
-                  <Scan className="mr-2 h-4 w-4 animate-pulse" /> Skenuojama...
-                </>
-              )}
-              {scanStage === 'scanned' && (
-                <>
-                  <Moon className="mr-2 h-4 w-4" /> Burti
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
+          </div>
+        )}
+        {!isScanning && !currentPalmImage && (
+          <div className="text-center text-muted-foreground">
+            <Hand className="w-24 h-24 mx-auto mb-4" />
+            <p>Padėkite delną skenavimui</p>
+          </div>
+        )}
+        {currentPalmImage && (
+          <img src={currentPalmImage} alt="Nuskenuotas delnas" className="w-full h-full object-cover" />
+        )}
       </div>
+    );
+  };
+
+  return (
+    <div className="container mx-auto py-24 px-4 min-h-screen flex flex-col items-center justify-center animate-fade-in">
       
-      {/* Suggestion Dialog */}
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Moon className="text-primary h-5 w-5" />
-              Jūsų išburta vieta
-            </DialogTitle>
-            <DialogDescription>
-              Pagal pateiktus duomenis, mėnulio fazę, horoskopą ir delno skaitymą
-            </DialogDescription>
-          </DialogHeader>
-          
-          {suggestedAttraction && (
-            <div className="space-y-4">
-              <div className="rounded-lg overflow-hidden">
-                <img 
-                  src={suggestedAttraction.image} 
-                  alt={suggestedAttraction.name} 
-                  className="w-full h-48 object-cover"
-                />
-              </div>
-              
-              <div>
-                <h3 className="text-lg font-semibold">{suggestedAttraction.name}</h3>
-                <p className="text-muted-foreground text-sm">{suggestedAttraction.category}</p>
-                <p className="mt-2">{suggestedAttraction.description}</p>
-                
-                <div className="mt-4 pt-3 border-t">
-                  <h4 className="text-sm font-medium mb-2">Kodėl ši vieta jums tinka:</h4>
-                  <ul className="text-sm space-y-1">
-                    <li>• {horoscope === 'aries' ? 'Jūsų avinui tinka aktyvios vietos' : 'Jūsų horoskopas rodo potraukį tokioms vietoms'}</li>
-                    <li>• {moonPhase === 'fullMoon' ? 'Pilnaties metu ši vieta ypač magiska' : 'Esama mėnulio fazė palankiausia šiai vietai'}</li>
-                    <li>• Jūsų gimimo metai ({birthYear}) kuria harmoniją su šia vieta</li>
-                    <li>• Jūsų delno skenavimo rezultatas atskleidė ypatingą ryšį su šia vieta</li>
-                  </ul>
-                </div>
-              </div>
+      
+      <Card className="w-full max-w-lg glass-card animate-scale-in">
+        <CardHeader className="text-center">
+          <Wand2 className="w-12 h-12 mx-auto text-primary mb-2" />
+          <CardTitle className="text-2xl">Delno Linijų Būrimas</CardTitle>
+          <CardDescription>Nuskenuokite savo delną ir sužinokite, ką jis slepia!</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center space-y-6">
+          <PalmScanner onScanComplete={setCurrentPalmImage} isScanning={isLoading} />
+
+          {!isLoading && !result && (
+            <Button onClick={handleScan} className="w-full" size="lg" disabled={isLoading}>
+              <ScanLine className="mr-2" /> {currentPalmImage ? "Skenuoti iš naujo" : "Skenuoti Delną"}
+            </Button>
+          )}
+
+          {isLoading && (
+            <div className="text-center">
+              <p>Skenuojama... Prašome palaukti.</p>
             </div>
           )}
-          
-          <DialogFooter>
-            <Button onClick={() => setIsOpen(false)}>Uždaryti</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
+          {currentPalmImage && !isLoading && !result && (
+             <Button onClick={handleFortuneTell} className="w-full bg-green-500 hover:bg-green-600 text-white" size="lg">
+              <Wand2 className="mr-2" /> Burti
+            </Button>
+          )}
+        </CardContent>
+        {result && (
+          <CardFooter className="flex flex-col items-center pt-6">
+            <p className="text-lg font-semibold mb-2">Jūsų laukia kelionė į:</p>
+            <h3 className="text-2xl font-bold text-primary text-center">{result.name}</h3>
+            <img src={result.image} alt={result.name} className="mt-4 rounded-lg max-h-48 object-cover aspect-video"/>
+            <Button onClick={resetScanner} className="mt-6 w-full" variant="outline">
+              Bandyti dar kartą
+            </Button>
+          </CardFooter>
+        )}
+      </Card>
+
+      
+      {result && isModalOpen && (
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-2xl">Jūsų kelionės tikslas!</DialogTitle>
+              <DialogDescription>
+                Remiantis jūsų delno linijomis, žvaigždės jums lėmė aplankyti šią vietą:
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 text-center">
+              <img src={result.image} alt={result.name} className="rounded-md mx-auto mb-4 max-h-60 object-contain" />
+              <h3 className="text-xl font-semibold text-primary">{result.name}</h3>
+              <p className="text-sm text-muted-foreground mt-1 flex items-center justify-center">
+                <MapPin className="w-4 h-4 mr-1" /> {result.category}
+              </p>
+              <p className="text-sm text-muted-foreground mt-2 line-clamp-3">{result.description}</p>
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setIsModalOpen(false)} className="w-full">Uždaryti</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+      
     </div>
   );
 };
